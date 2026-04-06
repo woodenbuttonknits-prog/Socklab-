@@ -1,3 +1,8 @@
-export function buildPattern(data) {
-  return JSON.stringify(data, null, 2);
+{
+  "patterns": [
+    { "id": "dots", "role": "filler", "repeat": 2, "height": 4, "chart": ["X.", ".X"] },
+    { "id": "stripes", "role": "filler", "repeat": 2, "height": 4, "chart": ["XX", ".."] },
+    { "id": "honeycomb", "role": "support", "repeat": 4, "height": 6, "chart": ["XX..", ".XX.", "..XX", ".XX."] },
+    { "id": "bee", "role": "hero", "repeat": 6, "height": 8, "chart": ["..XX..", ".XXXX.", "..XX..", ".X..X."] }
+  ]
 }

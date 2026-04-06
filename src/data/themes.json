@@ -1,0 +1,10 @@
+{
+  "bee": {
+    "motifRoles": {
+      "hero": ["bee"],
+      "support": ["honeycomb"],
+      "filler": ["dots", "stripes"]
+    },
+    "composition": "centered_hero"
+  }
+}
