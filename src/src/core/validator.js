@@ -1,0 +1,8 @@
+export function validateTheme(theme, patterns) {
+  const allIds = patterns.map(p => p.id);
+  Object.values(theme.motifRoles).flat().forEach(id => {
+    if (!allIds.includes(id)) {
+      throw new Error(`Pattern ${id} not found`);
+    }
+  });
+}
