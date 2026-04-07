@@ -15,6 +15,15 @@
       border: 2px solid #333;
     }
 
+    .sock {
+      width: 200px;
+      margin: auto;
+      border-radius: 100px 100px 20px 20px;
+      overflow: hidden;
+      border: 2px solid #333;
+      background: white;
+    }
+
     .band {
       display: grid;
     }
@@ -48,6 +57,7 @@ sockData.structure.forEach(pattern => {
 
   band.style.gridTemplateColumns = `repeat(${chart[0].length}, 10px)`;
 
+  for (let r = 0; r < (pattern.rounds || 6); r++) {
   chart.forEach(row => {
     row.split("").forEach(cell => {
       const div = document.createElement("div");
@@ -64,7 +74,19 @@ sockData.structure.forEach(pattern => {
   });
 
   container.appendChild(band);
+  };
+  const cuff = document.createElement("div");
+  cuff.style.height = "20px";
+  cuff.style.background = "#ddd";
+  container.appendChild(cuff);
+
+  const foot = document.createElement("div");
+  foot.style.height = "40px";
+  foot.style.background = "#eee";
+  container.appendChild(foot);
+
 });
+
 </script>
 
 </body>
