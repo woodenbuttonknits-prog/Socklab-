@@ -7,44 +7,8 @@
   <style>
     body {
       font-family: sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
       text-align: center;
-    }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    .controls {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      max-width: 400px;
-      margin: auto;
-      margin-bottom: 20px;
-      text-align: left;
-    }
-
-    .controls label {
-      display: block;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .controls select,
-    .controls input {
-      width: 100%;
-      padding: 6px;
-      margin-top: 4px;
-    }
-
-    button {
-      margin-top: 15px;
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
+      background: #f5f5f5;
     }
 
     .sock {
@@ -56,7 +20,6 @@
       overflow: hidden;
       border: 2px solid #333;
       position: relative;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
     .band {
@@ -72,32 +35,14 @@
       border-radius: 1px;
     }
 
-    .heel {
-      position: absolute;
-      bottom: 60px;
-      left: 0;
-      width: 60px;
-      height: 60px;
-      background: #ddd;
-      border-radius: 20px;
-    }
-
-    .foot {
-      height: 50px;
-      background: #eee;
-      border-radius: 0 0 20px 20px;
-    }
-
     #patternOutput {
       text-align: left;
       white-space: pre-wrap;
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
       max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 20px auto;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -106,45 +51,17 @@
 
 <h1>🧦 SockLab</h1>
 
-<div class="controls">
-  <label>Size system</label>
-  <select id="sizeSystem">
-    <option value="EU">EU</option>
-    <option value="US">US</option>
-  </select>
-
+<div>
   <label>Size</label>
   <input id="size" type="number" value="38" />
 
-  <label>Yarn weight</label>
-  <select id="yarn">
-    <option value="fingering">Fingering</option>
-    <option value="dk">DK</option>
-    <option value="worsted">Worsted</option>
-  </select>
-
-  <label>Needle size (mm)</label>
-  <input id="needle" type="number" value="2.5" step="0.5" />
-
-  <label>Construction</label>
-  <select id="construction">
-    <option value="top-down">Top-down</option>
-    <option value="toe-up">Toe-up</option>
-  </select>
-
-  <label>Heel type</label>
-  <select id="heel">
-    <option value="flap">Heel flap</option>
-    <option value="short-row">Short row</option>
-  </select>
-
-  <label>Theme (colorwork)</label>
+  <label>Theme</label>
   <select id="theme">
     <option value="bee">Bee</option>
   </select>
-
-  <button id="generateBtn">Generate Sock</button>
 </div>
+
+<button id="generateBtn">Generate Sock</button>
 
 <div id="sock" class="sock"></div>
 
@@ -154,31 +71,30 @@
   import { generateSock } from "./src/generator/generator.js";
   import { buildInstructions } from "./src/patterns/instructionBuilder.js";
 
-  const container = document.getElementById("sock");
-  const output = document.getElementById("patternOutput");
-
   function getInputs() {
     return {
-      sizeSystem: document.getElementById("sizeSystem").value,
-      size: Number(document.getElementById("size").value),
-      yarn: document.getElementById("yarn").value,
-      needle: Number(document.getElementById("needle").value),
-      construction: document.getElementById("construction").value,
-      heel: document.getElementById("heel").value,
-      themeName: document.getElementById("theme").value
+        size: Number(document.getElementById("size").value),
+        themeName: document.getElementById("theme").value
     };
   }
 
+  const container = document.getElementById("sock");
+  const output = document.getElementById("patternOutput");
+
   function renderSock() {
+    console.log("RENDER START");
+
     const config = getInputs();
 
-    console.log("INPUT:", config);
-
     const sock = generateSock(config);
+
+    console.log("SOCK:", sock);
 
     container.innerHTML = "";
 
     const leg = sock.sections?.leg || sock.structure || [];
+
+    console.log("LEG:", leg);
 
     leg.forEach(pattern => {
       if (!pattern || !pattern.chart) return;
@@ -187,7 +103,10 @@
       band.className = "band";
 
       const chart = pattern.chart;
-      band.style.gridTemplateColumns = `repeat(${chart[0].length}, 6px)`;
+
+      const width = pattern.width || chart[0].length;
+
+      band.style.gridTemplateColumns = `repeat(${width}, 6px)`;
 
       for (let r = 0; r < (pattern.rounds || 6); r++) {
         chart.forEach(row => {
@@ -198,7 +117,7 @@
             div.style.background =
               cell === "X"
                 ? pattern.colors?.[0] || "black"
-                : pattern.colors?.[1] || "#ddd";
+                : pattern.colors?.[1] || "#eee";
 
             band.appendChild(div);
           });
@@ -207,14 +126,6 @@
 
       container.appendChild(band);
     });
-
-    const heel = document.createElement("div");
-    heel.className = "heel";
-    container.appendChild(heel);
-
-    const foot = document.createElement("div");
-    foot.className = "foot";
-    container.appendChild(foot);
 
     const instructions = buildInstructions(sock);
     output.textContent = instructions;
