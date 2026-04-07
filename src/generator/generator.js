@@ -2,42 +2,99 @@ import patternsData from "../data/patterns.json";
 import themes from "../data/themes.json";
 import colors from "../data/colors.json";
 
-import { validateTheme } from "../core/validator.js";
 import { buildThemeStructure } from "../core/themeEngine.js";
 import { applyColors } from "../core/colorEngine.js";
 import { applyHeights } from "../core/templateEngine.js";
+import { convertToEU, getFootCircumference } from "../core/sizeConverter.js";   
+
+// -------------------------
+// HELPERS
+// -------------------------
+
+function getGauge(yarn, needle) {
+  // simpele basis (later uitbreiden)
+  if (yarn === "fingering") return 30;
+  if (yarn === "dk") return 24;
+  if (yarn === "worsted") return 20;
+
+  return 28;
+}
+
+function calculateCastOn(size, gauge) {
+  const euSize = convertToEU(size, config.sizeSystem || "EU");
+  const footCircumference = getFootCircumference(euSize);
+  const stitches = (footCircumference / 10) * gauge;
+
+  return Math.round(stitches / 4) * 4; // deelbaar door 4
+}
+
+// -------------------------
+// MAIN
+// -------------------------
 
 export function generateSock(config = {}) {
   const {
-    themeName = "bee",
-    gauge = 28,
-    footCircumference = 22,
-    ease = -2,
-    heel = "flap"
+    size = 38,
+    yarn = "fingering",
+    needle = 2.5,
+    construction = "top-down",
+    heel = "flap",
+    themeName = "bee"
   } = config;
 
+  const patterns = patternsData.patterns;
   const theme = themes[themeName];
   const themeColors = colors[themeName];
-  const patterns = patternsData.patterns;
 
-  if (!theme) throw new Error("Theme not found");
+  if (!theme) {
+    throw new Error("Theme not found");
+  }
 
-  validateTheme(theme, patterns);
+  // -------------------------
+  // GAUGE + STITCHES
+  // -------------------------
+  const gauge = getGauge(yarn, needle);
+  const castOn = calculateCastOn(size, gauge);
 
+  // -------------------------
+  // STRUCTURE (colorwork bands)
+  // -------------------------
   let structure = buildThemeStructure(theme, patterns);
+
   structure = applyColors(structure, themeColors);
   structure = applyHeights(structure);
 
-  const stitchesPerCm = gauge / 10;
-  const castOnRaw = (footCircumference + ease) * stitchesPerCm;
-  const castOn = Math.round(castOnRaw / 4) * 4;
+  // -------------------------
+  // SECTIONS (BELANGRIJK!)
+  // -------------------------
+  const sections =
+    construction === "top-down"
+      ? {
+          cuff: { rounds: 20 },
+          leg: structure,
+          heel: { type: heel },
+          foot: { lengthCm: size * 0.6 },
+          toe: {}
+        }
+      : {
+          toe: {},
+          foot: { lengthCm: size * 0.6 },
+          heel: { type: heel },
+          leg: structure,
+          cuff: { rounds: 20 }
+        };
 
+  // -------------------------
+  // OUTPUT
+  // -------------------------
   return {
-    castOn,
-    pattern: null,
-    structure,
-    theme: themeName,
+    size,
     gauge,
-    heel
+    castOn,
+    construction,
+    heel,
+    structure,
+    sections,
+    theme: themeName
   };
 }

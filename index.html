@@ -16,7 +16,37 @@
       margin-bottom: 10px;
     }
 
-    /* SOCK CONTAINER */
+    .controls {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .controls label {
+      display: block;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .controls select,
+    .controls input {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+    }
+
+    button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
     .sock {
       width: 120px;
       height: 360px;
@@ -29,14 +59,12 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
-    /* BAND */
     .band {
       display: grid;
       justify-content: center;
       margin: 4px 0;
     }
 
-    /* STITCH */
     .cell {
       width: 6px;
       height: 6px;
@@ -44,7 +72,6 @@
       border-radius: 1px;
     }
 
-    /* HEEL */
     .heel {
       position: absolute;
       bottom: 60px;
@@ -55,14 +82,12 @@
       border-radius: 20px;
     }
 
-    /* FOOT */
     .foot {
       height: 50px;
       background: #eee;
       border-radius: 0 0 20px 20px;
     }
 
-    /* OUTPUT */
     #patternOutput {
       text-align: left;
       white-space: pre-wrap;
@@ -74,13 +99,6 @@
       margin-left: auto;
       margin-right: auto;
     }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
   </style>
 </head>
 
@@ -88,7 +106,45 @@
 
 <h1>🧦 SockLab</h1>
 
-<button id="generateBtn">Generate Sock</button>
+<div class="controls">
+  <label>Size system</label>
+  <select id="sizeSystem">
+    <option value="EU">EU</option>
+    <option value="US">US</option>
+  </select>
+
+  <label>Size</label>
+  <input id="size" type="number" value="38" />
+
+  <label>Yarn weight</label>
+  <select id="yarn">
+    <option value="fingering">Fingering</option>
+    <option value="dk">DK</option>
+    <option value="worsted">Worsted</option>
+  </select>
+
+  <label>Needle size (mm)</label>
+  <input id="needle" type="number" value="2.5" step="0.5" />
+
+  <label>Construction</label>
+  <select id="construction">
+    <option value="top-down">Top-down</option>
+    <option value="toe-up">Toe-up</option>
+  </select>
+
+  <label>Heel type</label>
+  <select id="heel">
+    <option value="flap">Heel flap</option>
+    <option value="short-row">Short row</option>
+  </select>
+
+  <label>Theme (colorwork)</label>
+  <select id="theme">
+    <option value="bee">Bee</option>
+  </select>
+
+  <button id="generateBtn">Generate Sock</button>
+</div>
 
 <div id="sock" class="sock"></div>
 
@@ -101,24 +157,36 @@
   const container = document.getElementById("sock");
   const output = document.getElementById("patternOutput");
 
-  function renderSock() {
-    const sock = generateSock();
+  function getInputs() {
+    return {
+      sizeSystem: document.getElementById("sizeSystem").value,
+      size: Number(document.getElementById("size").value),
+      yarn: document.getElementById("yarn").value,
+      needle: Number(document.getElementById("needle").value),
+      construction: document.getElementById("construction").value,
+      heel: document.getElementById("heel").value,
+      themeName: document.getElementById("theme").value
+    };
+  }
 
-    console.log("SOCK:", sock);
+  function renderSock() {
+    const config = getInputs();
+
+    console.log("INPUT:", config);
+
+    const sock = generateSock(config);
 
     container.innerHTML = "";
 
-    // -------------------------
-    // RENDER BANDS
-    // -------------------------
-    sock.structure.forEach(pattern => {
+    const leg = sock.sections?.leg || sock.structure || [];
+
+    leg.forEach(pattern => {
       if (!pattern || !pattern.chart) return;
 
       const band = document.createElement("div");
       band.className = "band";
 
       const chart = pattern.chart;
-
       band.style.gridTemplateColumns = `repeat(${chart[0].length}, 6px)`;
 
       for (let r = 0; r < (pattern.rounds || 6); r++) {
@@ -139,32 +207,21 @@
 
       container.appendChild(band);
     });
-      
-    // -------------------------
-    // HEEL
-    // -------------------------
+
     const heel = document.createElement("div");
     heel.className = "heel";
     container.appendChild(heel);
 
-    // -------------------------
-    // FOOT
-    // -------------------------
     const foot = document.createElement("div");
     foot.className = "foot";
     container.appendChild(foot);
 
-    // -------------------------
-    // INSTRUCTIONS
-    // -------------------------
     const instructions = buildInstructions(sock);
     output.textContent = instructions;
   }
 
-  // INIT
   renderSock();
 
-  // BUTTON
   document
     .getElementById("generateBtn")
     .addEventListener("click", renderSock);
