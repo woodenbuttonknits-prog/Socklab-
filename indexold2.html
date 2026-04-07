@@ -11,7 +11,6 @@ body {
   background: #f5f5f5;
 }
 
-/* CONTROLS */
 .controls {
   margin: 20px;
 }
@@ -21,77 +20,53 @@ input, select, button {
   margin: 5px;
 }
 
-/* =========================
-   SOCK WRAPPER (LAYERED)
-========================= */
+/* --- SOCK LAYOUT --- */
+
 .sock-wrapper {
-  position: relative;
-  width: 260px;
-  height: 320px;
-  margin: 40px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 30px auto;
+  width: 220px;
 }
 
-/* =========================
-   LEG
-========================= */
+/* LEG */
 .sock-leg {
-  position: absolute;
-  top: 0;
-  left: 80px;
-
   width: 120px;
-  height: 200px;
-
   background: white;
   border: 3px solid #333;
-
+  border-bottom: none;
   overflow: hidden;
-  z-index: 2;
 }
 
-/* =========================
-   HEEL (partly hidden)
-========================= */
+/* HEEL (bocht) */
 .sock-heel {
-  position: absolute;
-  top: 150px;
-  left: 85px;
-
-  width: 70px;
-  height: 70px;
-
-  background: #ddd;
-  border-radius: 20px;
-
-  z-index: 3;
-  opacity: 0.95;
-}
-
-/* =========================
-   FOOT (rotated)
-========================= */
-.sock-foot {
-  position: absolute;
-  bottom: 20px;
-  left: 70px;
-
-  width: 170px;
-  height: 90px;
+  width: 80px;
+  height: 60px;
 
   background: white;
-  border: 3px solid #333;
-  border-radius: 0 50px 50px 0;
 
-  transform: rotate(25deg);
-  transform-origin: left center;
+  border-bottom: 3px solid #333;
 
-  overflow: hidden;
-  z-index: 1;
+  border-radius: 0 0 30px 0;
+
+  margin-left: 40px;
+  margin-top: -3px;
 }
 
-/* =========================
-   GRID
-========================= */
+/* FOOT */
+.sock-foot {
+  width: 160px;
+  background: white;
+  border: 3px solid #333;
+  border-radius: 0 40px 40px 0;
+  border-top: none;
+  margin-left: 40px;
+  margin-top: -3px;
+  overflow: hidden;
+}
+
+/* GRID */
 .band {
   display: grid;
   justify-content: center;
@@ -102,11 +77,9 @@ input, select, button {
   height: 6px;
 }
 
-/* =========================
-   INSTRUCTIONS
-========================= */
+/* INSTRUCTIONS */
 .instructions {
-  max-width: 420px;
+  max-width: 400px;
   margin: 20px auto;
   background: #eee;
   padding: 15px;
@@ -162,20 +135,21 @@ window.renderSock = function () {
   const config = getInputs();
   const sock = generateSock(config);
 
-  console.log(sock);
+  console.log("SOCK:", sock);
 
   legContainer.innerHTML = "";
-  footContainer.innerHTML = "";
   heelContainer.innerHTML = "";
+  footContainer.innerHTML = "";
 
   const fullWidth = sock.castOn || 60;
   const width = Math.floor(fullWidth / 2);
 
-  const SCALE = 3;
+  const ROUND_SCALE = 3;
 
   /* =========================
      CUFF
   ========================= */
+
   const cuff = document.createElement("div");
   cuff.className = "band";
   cuff.style.gridTemplateColumns = `repeat(${width}, 6px)`;
@@ -194,6 +168,7 @@ window.renderSock = function () {
   /* =========================
      LEG PATTERNS
   ========================= */
+
   const leg = sock.sections?.leg || sock.structure || [];
 
   leg.forEach(pattern => {
@@ -209,25 +184,25 @@ window.renderSock = function () {
 
     band.style.gridTemplateColumns = `repeat(${width}, 6px)`;
 
-    const rows = Math.max(1, Math.floor((pattern.rounds || 6) / SCALE));
+    const rows = Math.max(1, Math.floor((pattern.rounds || 6) / ROUND_SCALE));
 
     for (let r = 0; r < rows; r++) {
       chart.forEach(row => {
 
-        let visual = "";
+        let visualRow = "";
 
         for (let i = 0; i < repeats; i++) {
-          visual += row;
+          visualRow += row;
         }
 
-        visual = visual.slice(0, width);
+        visualRow = visualRow.slice(0, width);
 
-        visual.split("").forEach(c => {
+        visualRow.split("").forEach(cell => {
           const div = document.createElement("div");
           div.className = "cell";
 
           div.style.background =
-            c === "X"
+            cell === "X"
               ? pattern.colors?.[0] || "black"
               : pattern.colors?.[1] || "white";
 
@@ -241,39 +216,46 @@ window.renderSock = function () {
   });
 
   /* =========================
-     HEEL (simple fill)
+     HEEL (subtiel)
   ========================= */
-  const heel = document.createElement("div");
-  heel.style.width = "100%";
-  heel.style.height = "100%";
-  heel.style.background = "#ddd";
-  heelContainer.appendChild(heel);
+
+  const heelFill = document.createElement("div");
+  heelFill.style.width = "100%";
+  heelFill.style.height = "100%";
+  heelFill.style.background = "#ddd";
+  heelContainer.appendChild(heelFill);
 
   /* =========================
      FOOT
   ========================= */
+
   const foot = document.createElement("div");
   foot.style.height = "50px";
-  foot.style.background = "#eee";
+  foot.style.background = "#f0f0f0";
   footContainer.appendChild(foot);
 
   /* =========================
-     TOE
+     TOE (tapered)
   ========================= */
+
   const toe = document.createElement("div");
   toe.className = "band";
 
-  const rows = 12;
-  let current = width;
+  const toeRows = 12;
+  let currentWidth = width;
 
-  for (let r = 0; r < rows; r++) {
+  for (let r = 0; r < toeRows; r++) {
 
-    if (r % 2 === 0 && current > 6) current -= 2;
+    if (r % 2 === 0 && currentWidth > 6) {
+      currentWidth -= 2;
+    }
 
-    const empty = Math.floor((width - current) / 2);
+    const empty = Math.floor((width - currentWidth) / 2);
+
     toe.style.gridTemplateColumns = `repeat(${width}, 6px)`;
 
     for (let i = 0; i < width; i++) {
+
       const cell = document.createElement("div");
       cell.className = "cell";
 
@@ -292,6 +274,7 @@ window.renderSock = function () {
   /* =========================
      INSTRUCTIONS
   ========================= */
+
   instructionsBox.textContent = buildInstructions(sock);
 };
 
