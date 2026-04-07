@@ -1,92 +1,173 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Sock Preview</title>
+  <meta charset="UTF-8" />
+  <title>SockLab</title>
+
   <style>
     body {
       font-family: sans-serif;
       background: #f5f5f5;
       padding: 20px;
+      text-align: center;
     }
 
-    .sock {
-      width: 200px;
-      margin: auto;
-      border: 2px solid #333;
+    h1 {
+      margin-bottom: 10px;
     }
 
+    /* SOCK CONTAINER */
     .sock {
-      width: 200px;
-      margin: auto;
-      border-radius: 100px 100px 20px 20px;
+      width: 120px;
+      height: 360px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 100px 100px 30px 30px;
       overflow: hidden;
       border: 2px solid #333;
-      background: white;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
+    /* BAND */
     .band {
       display: grid;
+      justify-content: center;
+      margin: 4px 0;
     }
 
+    /* STITCH */
     .cell {
-      width: 10px;
-      height: 10px;
+      width: 6px;
+      height: 6px;
+      margin: 0.5px;
+      border-radius: 1px;
+    }
+
+    /* HEEL */
+    .heel {
+      position: absolute;
+      bottom: 60px;
+      left: 0;
+      width: 60px;
+      height: 60px;
+      background: #ddd;
+      border-radius: 20px;
+    }
+
+    /* FOOT */
+    .foot {
+      height: 50px;
+      background: #eee;
+      border-radius: 0 0 20px 20px;
+    }
+
+    /* OUTPUT */
+    #patternOutput {
+      text-align: left;
+      white-space: pre-wrap;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
     }
   </style>
 </head>
+
 <body>
 
-<h2>🧦 Sock Preview</h2>
+<h1>🧦 SockLab</h1>
+
+<button id="generateBtn">Generate Sock</button>
 
 <div id="sock" class="sock"></div>
 
+<pre id="patternOutput"></pre>
+
 <script type="module">
-import { generateSock } from "./src/generator/generator.js";
+  import { generateSock } from "./src/generator/generator.js";
+  import { buildInstructions } from "./src/patterns/instructionBuilder.js";
 
-const sockData = generateSock();
-console.log(sockData.structure);
-const container = document.getElementById("sock");
+  const container = document.getElementById("sock");
+  const output = document.getElementById("patternOutput");
 
-sockData.structure.forEach(pattern => {
-  const band = document.createElement("div");
-  band.className = "band";
+  function renderSock() {
+    const sock = generateSock();
 
-  const chart = pattern.chart;
+    console.log("SOCK:", sock);
 
-  if (!chart) return;
+    container.innerHTML = "";
 
-  band.style.gridTemplateColumns = `repeat(${chart[0].length}, 10px)`;
+    // -------------------------
+    // RENDER BANDS
+    // -------------------------
+    sock.structure.forEach(pattern => {
+      if (!pattern || !pattern.chart) return;
 
-  for (let r = 0; r < (pattern.rounds || 6); r++) {
-  chart.forEach(row => {
-    row.split("").forEach(cell => {
-      const div = document.createElement("div");
-      div.className = "cell";
+      const band = document.createElement("div");
+      band.className = "band";
 
-      if (cell === "X") {
-        div.style.background = pattern.colors[0];
-      } else {
-        div.style.background = pattern.colors[1];
+      const chart = pattern.chart;
+
+      band.style.gridTemplateColumns = `repeat(${chart[0].length}, 6px)`;
+
+      for (let r = 0; r < (pattern.rounds || 6); r++) {
+        chart.forEach(row => {
+          row.split("").forEach(cell => {
+            const div = document.createElement("div");
+            div.className = "cell";
+
+            div.style.background =
+              cell === "X"
+                ? pattern.colors?.[0] || "black"
+                : pattern.colors?.[1] || "#ddd";
+
+            band.appendChild(div);
+          });
+        });
       }
 
-      band.appendChild(div);
+      container.appendChild(band);
     });
-  });
+      
+    // -------------------------
+    // HEEL
+    // -------------------------
+    const heel = document.createElement("div");
+    heel.className = "heel";
+    container.appendChild(heel);
 
-  container.appendChild(band);
-  };
-  const cuff = document.createElement("div");
-  cuff.style.height = "20px";
-  cuff.style.background = "#ddd";
-  container.appendChild(cuff);
+    // -------------------------
+    // FOOT
+    // -------------------------
+    const foot = document.createElement("div");
+    foot.className = "foot";
+    container.appendChild(foot);
 
-  const foot = document.createElement("div");
-  foot.style.height = "40px";
-  foot.style.background = "#eee";
-  container.appendChild(foot);
+    // -------------------------
+    // INSTRUCTIONS
+    // -------------------------
+    const instructions = buildInstructions(sock);
+    output.textContent = instructions;
+  }
 
-});
+  // INIT
+  renderSock();
 
+  // BUTTON
+  document
+    .getElementById("generateBtn")
+    .addEventListener("click", renderSock);
 </script>
 
 </body>

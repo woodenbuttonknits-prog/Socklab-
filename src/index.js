@@ -1,7 +1,7 @@
-import { generateSock } from "./generator/generator.js";
-import { buildPattern } from "./builder/patternBuilder.js";
+import { buildInstructions } from "./src/patterns/instructionBuilder.js";
 
 const sock = generateSock();
-const output = buildPattern(sock);
 
-console.log(output);
+const instructions = buildInstructions(sock);
+
+console.log(instructions);
