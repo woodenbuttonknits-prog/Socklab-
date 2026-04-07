@@ -6,137 +6,206 @@
 
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center;
       background: #f5f5f5;
     }
 
+    .controls {
+      margin: 20px;
+    }
+
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+    }
+
     .sock {
       width: 120px;
-      height: 360px;
       margin: 20px auto;
       background: white;
-      border-radius: 100px 100px 30px 30px;
+      border: 3px solid #333;
+      border-radius: 30px 30px 100px 100px;
       overflow: hidden;
-      border: 2px solid #333;
-      position: relative;
     }
 
     .band {
       display: grid;
       justify-content: center;
-      margin: 4px 0;
     }
 
     .cell {
       width: 6px;
       height: 6px;
-      margin: 0.5px;
-      border-radius: 1px;
     }
 
-    #patternOutput {
-      text-align: left;
-      white-space: pre-wrap;
+    .instructions {
       max-width: 400px;
       margin: 20px auto;
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
+      background: #eee;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: left;
+      font-family: monospace;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 
 <body>
 
-<h1>🧦 SockLab</h1>
+  <h1>🧦 SockLab</h1>
 
-<div>
-  <label>Size</label>
-  <input id="size" type="number" value="38" />
+  <div class="controls">
+    Size 
+    <input id="size" type="number" value="38" />
 
-  <label>Theme</label>
-  <select id="theme">
-    <option value="bee">Bee</option>
-  </select>
-</div>
+    Theme 
+    <select id="theme">
+      <option value="bee">Bee</option>
+    </select>
 
-<button id="generateBtn">Generate Sock</button>
+    <br/>
 
-<div id="sock" class="sock"></div>
+    <button onclick="renderSock()">Generate Sock</button>
+  </div>
 
-<pre id="patternOutput"></pre>
+  <div id="sock" class="sock"></div>
 
-<script type="module">
-  import { generateSock } from "./src/generator/generator.js";
-  import { buildInstructions } from "./src/patterns/instructionBuilder.js";
+  <div id="instructions" class="instructions"></div>
 
-  function getInputs() {
-    return {
-        size: Number(document.getElementById("size").value),
+  <script type="module">
+    import { generateSock } from "./src/generator/generator.js";
+    import { buildInstructions } from "./src/patterns/instructionBuilder.js";
+
+    const container = document.getElementById("sock");
+    const instructionsBox = document.getElementById("instructions");
+
+    function getInputs() {
+      return {
+        size: parseInt(document.getElementById("size").value),
         themeName: document.getElementById("theme").value
-    };
-  }
+      };
+    }
 
-  const container = document.getElementById("sock");
-  const output = document.getElementById("patternOutput");
+    window.renderSock = function () {
 
-  function renderSock() {
-    console.log("RENDER START");
+      const config = getInputs();
+      const sock = generateSock(config);
 
-    const config = getInputs();
+      console.log("SOCK:", sock);
 
-    const sock = generateSock(config);
+      container.innerHTML = "";
 
-    console.log("SOCK:", sock);
+      const ROUND_SCALE = 3;
 
-    container.innerHTML = "";
+      // -------------------------
+      // CUFF (RIBBING)
+      // -------------------------
+      const cuff = document.createElement("div");
+      cuff.className = "band";
 
-    const leg = sock.sections?.leg || sock.structure || [];
+      const cuffWidth = sock.castOn || 60;
+      cuff.style.gridTemplateColumns = `repeat(${cuffWidth}, 6px)`;
 
-    console.log("LEG:", leg);
+      const cuffRows = Math.max(1, Math.round(20 / ROUND_SCALE));
+for (let r = 0; r < cuffRows; r++) {
+        for (let i = 0; i < cuffWidth; i++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
 
-    leg.forEach(pattern => {
-      if (!pattern || !pattern.chart) return;
+          const isKnit = i % 2 === 0;
+          cell.style.background = isKnit ? "#bbb" : "#eee";
 
-      const band = document.createElement("div");
-      band.className = "band";
-
-      const chart = pattern.chart;
-
-      const width = pattern.width || chart[0].length;
-
-      band.style.gridTemplateColumns = `repeat(${width}, 6px)`;
-
-      for (let r = 0; r < (pattern.rounds || 6); r++) {
-        chart.forEach(row => {
-          row.split("").forEach(cell => {
-            const div = document.createElement("div");
-            div.className = "cell";
-
-            div.style.background =
-              cell === "X"
-                ? pattern.colors?.[0] || "black"
-                : pattern.colors?.[1] || "#eee";
-
-            band.appendChild(div);
-          });
-        });
+          cuff.appendChild(cell);
+        }
       }
 
-      container.appendChild(band);
-    });
+      container.appendChild(cuff);
 
-    const instructions = buildInstructions(sock);
-    output.textContent = instructions;
-  }
+      // -------------------------
+      // LEG (COLORWORK)
+      // -------------------------
+      const leg = sock.sections?.leg || sock.structure || [];
 
-  renderSock();
+      leg.forEach(pattern => {
 
-  document
-    .getElementById("generateBtn")
-    .addEventListener("click", renderSock);
-</script>
+        const chart = pattern.chart || [];
+        if (!chart.length) return;
+
+        const band = document.createElement("div");
+        band.className = "band";
+
+        const repeat = pattern.repeat || chart[0].length;
+        const width = pattern.width || sock.castOn || repeat;
+        const repeats = Math.floor(width / repeat);
+
+        band.style.gridTemplateColumns = `repeat(${width}, 6px)`;
+
+        const visualRows = Math.max(
+          1,
+          Math.floor((pattern.rounds || chart.length || 6) / ROUND_SCALE)
+        );
+
+        for (let r = 0; r < visualRows; r++) {
+          chart.forEach(row => {
+
+            for (let i = 0; i < repeats; i++) {
+
+              row.split("").forEach(cell => {
+                const div = document.createElement("div");
+                div.className = "cell";
+
+                div.style.background =
+                  cell === "X"
+                    ? pattern.colors?.[0] || "black"
+                    : pattern.colors?.[1] || "white";
+
+                band.appendChild(div);
+              });
+
+            }
+
+          });
+        }
+
+        container.appendChild(band);
+      });
+
+      // -------------------------
+      // HEEL
+      // -------------------------
+      const heel = document.createElement("div");
+      heel.style.height = "40px";
+      heel.style.background = "#ccc";
+      container.appendChild(heel);
+
+      // -------------------------
+      // FOOT
+      // -------------------------
+      const foot = document.createElement("div");
+      foot.style.height = "50px";
+      foot.style.background = "#f0f0f0";
+      container.appendChild(foot);
+
+      // -------------------------
+      // TOE
+      // -------------------------
+      const toe = document.createElement("div");
+      toe.style.height = "40px";
+      toe.style.background = "#ddd";
+      container.appendChild(toe);
+
+      // -------------------------
+      // INSTRUCTIONS
+      // -------------------------
+      instructionsBox.textContent = buildInstructions(sock);
+    };
+
+    // auto render bij laden
+    renderSock();
+
+  </script>
 
 </body>
 </html>
