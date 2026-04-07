@@ -1,6 +1,21 @@
-import patternsData from "../data/patterns.json" assert { type: "json" };
-import themes from "../data/themes.json" assert { type: "json" };
-import colors from "../data/colors.json" assert { type: "json" };
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const patternsData = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../data/patterns.json"))
+);
+
+const themes = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../data/themes.json"))
+);
+
+const colors = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../data/colors.json"))
+);
 
 import { validateTheme } from "../core/validator.js";
 import { buildThemeStructure } from "../core/themeEngine.js";

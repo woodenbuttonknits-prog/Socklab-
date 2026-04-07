@@ -2,9 +2,15 @@ export function buildThemeStructure(theme, patterns) {
   const roles = theme.motifRoles;
 
   function pick(ids) {
-    const options = patterns.filter(p => ids.includes(p.id));
-    return options[Math.floor(Math.random() * options.length)];
+  const options = patterns.filter(p => ids.includes(p.id));
+
+  if (options.length === 0) {
+    console.error("No patterns found for:", ids);
+    return null;
   }
+
+  return options[Math.floor(Math.random() * options.length)];
+}
 
   if (theme.composition === "centered_hero") {
     return [
