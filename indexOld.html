@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SockLab</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #f5f5f5;
+}
+
+.controls {
+  margin: 20px;
+}
+
+.instructions {
+  max-width: 420px;
+  margin: 20px auto;
+  background: #eee;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: left;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🧦 SockLab</h1>
+
+<div class="controls">
+  Size <input id="size" type="number" value="38" />
+  Theme 
+  <select id="theme">
+    <option value="bee">Bee</option>
+  </select>
+  <br/>
+  <button onclick="renderSock()">Generate Sock</button>
+</div>
+
+<svg id="sockSVG" width="300" height="420"></svg>
+<svg width="200" height="400">
+
+  <defs>
+    <pattern id="knitPattern" width="48" height="48" patternUnits="userSpaceOnUse">
+      <!-- JS injecteert hier rects -->
+    </pattern>
+  </defs>
+
+  <!-- sok -->
+  <path 
+    d="M50 0 L150 0 L150 250 Q150 300 100 320 Q50 300 50 250 Z"
+    fill="url(#knitPattern)"
+    stroke="#333"
+    stroke-width="2"
+  />
+
+</svg>
+
+<div id="instructions" class="instructions"></div>
+
+<defs>
+  <pattern id="knitPattern" width="8" height="8" patternUnits="userSpaceOnUse">
+    <!-- hier komt je chart -->
+  </pattern>
+</defs>
+
+<path d="..." fill="url(#knitPattern)" />
+
+<script type="module">
+import { generateSock } from "./src/generator/generator.js";
+import { buildInstructions } from "./src/patterns/instructionBuilder.js";
+
+const svg = document.getElementById("sockSVG");
+const instructionsBox = document.getElementById("instructions");
+
+function getInputs() {
+  return {
+    size: parseInt(document.getElementById("size").value),
+    themeName: document.getElementById("theme").value
+  };
+}
+
+function createRect(x, y, size, color) {
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("x", x);
+  rect.setAttribute("y", y);
+  rect.setAttribute("width", size);
+  rect.setAttribute("height", size);
+  rect.setAttribute("fill", color);
+  return rect;
+}
+
+window.renderSock = function () {
+
+  svg.innerHTML = "";
+
+  const config = getInputs();
+  const sock = generateSock(config);
+
+  const width = Math.floor((sock.castOn || 60) / 2);
+  const cellSize = 6;
+
+  /* =========================
+     SOCK SHAPE
+  ========================= */
+
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+
+  const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+  clip.setAttribute("id", "sockShape");
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+  path.setAttribute("d", `
+    M100 20
+    L180 20
+    L180 180
+    Q220 180 240 230
+    L240 300
+    Q240 340 180 340
+    L100 340
+    Z
+  `);
+
+  clip.appendChild(path);
+  defs.appendChild(clip);
+  svg.appendChild(defs);
+
+  /* =========================
+     PATTERN GROUP
+  ========================= */
+
+  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  group.setAttribute("clip-path", "url(#sockShape)");
+
+  svg.appendChild(group);
+
+  /* =========================
+     CUFF
+  ========================= */
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < width; c++) {
+      const color = c % 2 === 0 ? "#bbb" : "#eee";
+      group.appendChild(createRect(100 + c * cellSize, 20 + r * cellSize, cellSize, color));
+    }
+  }
+
+  let yOffset = 20 + 8 * cellSize;
+
+  /* =========================
+     LEG PATTERNS
+  ========================= */
+
+  const leg = sock.sections?.leg || sock.structure || [];
+  const foot = sock.sections?.foot || leg; // tijdelijk hergebruik
+
+  leg.forEach(pattern => {
+
+    const chart = pattern.chart || [];
+    if (!chart.length) return;
+
+    const repeat = pattern.repeat || chart[0].length;
+    const repeats = Math.floor((sock.castOn || 60) / repeat);
+
+    const rows = pattern.rounds || 6;
+
+    for (let r = 0; r < rows; r++) {
+
+      chart.forEach(row => {
+
+        let visual = "";
+
+        for (let i = 0; i < repeats; i++) {
+          visual += row;
+        }
+
+        visual = visual.slice(0, width);
+
+        visual.split("").forEach((cell, i) => {
+
+          const color =
+            cell === "X"
+              ? pattern.colors?.[0] || "black"
+              : pattern.colors?.[1] || "white";
+
+          group.appendChild(
+            createRect(100 + i * cellSize, yOffset, cellSize, color)
+          );
+
+        });
+
+        yOffset += cellSize;
+
+      });
+    }
+
+  });
+
+  /* =========================
+   HEEL (blok)
+========================= */
+
+const heelSize = Math.floor(width * 0.6);
+const heelStartX = 100 + (width - heelSize) / 2;
+const heelStartY = yOffset;
+
+for (let r = 0; r < 8; r++) {
+  for (let c = 0; c < heelSize; c++) {
+
+    const color = c % 2 === 0 ? "#ccc" : "#eee";
+
+    group.appendChild(
+      createRect(
+        heelStartX + c * cellSize,
+        heelStartY + r * cellSize,
+        cellSize,
+        color
+      )
+    );
+  }
+}
+
+yOffset += 8 * cellSize;
+
+/* =========================
+   FOOT (doorlopend patroon)
+========================= */
+
+foot.forEach(pattern => {
+
+  const chart = pattern.chart || [];
+  if (!chart.length) return;
+
+  const repeat = pattern.repeat || chart[0].length;
+  const repeats = Math.floor((sock.castOn || 60) / repeat);
+
+  const rows = 10; // vaste voet lengte (later dynamisch)
+
+  for (let r = 0; r < rows; r++) {
+
+    chart.forEach(row => {
+
+      let visual = "";
+
+      for (let i = 0; i < repeats; i++) {
+        visual += row;
+      }
+
+      visual = visual.slice(0, width);
+
+      visual.split("").forEach((cell, i) => {
+
+        const color =
+          cell === "X"
+            ? pattern.colors?.[0] || "black"
+            : pattern.colors?.[1] || "white";
+
+        group.appendChild(
+          createRect(
+            100 + i * cellSize,
+            yOffset,
+            cellSize,
+            color
+          )
+        );
+
+      });
+
+      yOffset += cellSize;
+
+    });
+  }
+
+});
+
+/* =========================
+   TOE (shape)
+========================= */
+
+let currentWidth = width;
+
+for (let r = 0; r < 12; r++) {
+
+  if (r % 2 === 0 && currentWidth > 6) {
+    currentWidth -= 2;
+  }
+
+  const offset = Math.floor((width - currentWidth) / 2);
+
+  for (let c = 0; c < width; c++) {
+
+    const visible = c >= offset && c < width - offset;
+
+    group.appendChild(
+      createRect(
+        100 + c * cellSize,
+        yOffset,
+        cellSize,
+        visible ? "#ddd" : "transparent"
+      )
+    );
+  }
+
+  yOffset += cellSize;
+}
+
+  /* =========================
+     OUTLINE (bovenop)
+  ========================= */
+
+  const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+  outline.setAttribute("d", `
+    M100 20
+    L180 20
+    L180 180
+    Q220 180 240 230
+    L240 300
+    Q240 340 180 340
+    L100 340
+    Z
+  `);
+
+  outline.setAttribute("fill", "none");
+  outline.setAttribute("stroke", "#333");
+  outline.setAttribute("stroke-width", "3");
+
+  svg.appendChild(outline);
+
+  /* =========================
+     INSTRUCTIONS
+  ========================= */
+
+  instructionsBox.textContent = buildInstructions(sock);
+};
+
+renderSock();
+
+function buildPattern(pattern, colors) {
+  let size = 6; // stitch size
+
+  let svg = '';
+
+  pattern.chart.forEach((row, y) => {
+    row.split('').forEach((cell, x) => {
+      let color = cell === 'X' ? colors.main : colors.bg;
+
+      svg += `
+        <rect 
+          x="${x * size}" 
+          y="${y * size}" 
+          width="${size}" 
+          height="${size}" 
+          fill="${color}" />
+      `;
+    });
+  });
+
+  return svg;
+}
+</script>
+
+</body>
+</html>

@@ -1,119 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>SockLab</title>
 
 <style>
 body {
-  font-family: Arial, sans-serif;
+  font-family: sans-serif;
   text-align: center;
   background: #f5f5f5;
 }
 
-/* CONTROLS */
 .controls {
   margin: 20px;
 }
 
 input, select, button {
   padding: 8px;
+  font-size: 16px;
   margin: 5px;
 }
 
-/* =========================
-   SOCK WRAPPER (LAYERED)
-========================= */
-.sock-wrapper {
-  position: relative;
-  width: 260px;
-  height: 320px;
-  margin: 40px auto;
+svg {
+  margin-top: 20px;
 }
 
-/* =========================
-   LEG
-========================= */
-.sock-leg {
-  position: absolute;
-  top: 0;
-  left: 80px;
-
-  width: 120px;
-  height: 200px;
-
-  background: white;
-  border: 3px solid #333;
-
-  overflow: hidden;
-  z-index: 2;
-}
-
-/* =========================
-   HEEL (partly hidden)
-========================= */
-.sock-heel {
-  position: absolute;
-  top: 150px;
-  left: 85px;
-
-  width: 70px;
-  height: 70px;
-
-  background: #ddd;
-  border-radius: 20px;
-
-  z-index: 3;
-  opacity: 0.95;
-}
-
-/* =========================
-   FOOT (rotated)
-========================= */
-.sock-foot {
-  position: absolute;
-  bottom: 20px;
-  left: 70px;
-
-  width: 170px;
-  height: 90px;
-
-  background: white;
-  border: 3px solid #333;
-  border-radius: 0 50px 50px 0;
-
-  transform: rotate(25deg);
-  transform-origin: left center;
-
-  overflow: hidden;
-  z-index: 1;
-}
-
-/* =========================
-   GRID
-========================= */
-.band {
-  display: grid;
-  justify-content: center;
-}
-
-.cell {
-  width: 6px;
-  height: 6px;
-}
-
-/* =========================
-   INSTRUCTIONS
-========================= */
-.instructions {
-  max-width: 420px;
-  margin: 20px auto;
+.pattern-box {
+  margin: 30px auto;
+  padding: 20px;
+  width: 320px;
   background: #eee;
-  padding: 15px;
   border-radius: 10px;
   text-align: left;
-  font-family: monospace;
-  white-space: pre-wrap;
+  white-space: pre-line;
 }
 </style>
 </head>
@@ -123,179 +42,112 @@ input, select, button {
 <h1>🧦 SockLab</h1>
 
 <div class="controls">
-  Size <input id="size" type="number" value="38" />
+  Size <input id="size" value="38" />
   Theme 
   <select id="theme">
     <option value="bee">Bee</option>
   </select>
+
   <br/>
-  <button onclick="renderSock()">Generate Sock</button>
+  <button onclick="generate()">Generate Sock</button>
 </div>
 
-<!-- SOCK -->
-<div class="sock-wrapper">
-  <div id="leg" class="sock-leg"></div>
-  <div id="heel" class="sock-heel"></div>
-  <div id="foot" class="sock-foot"></div>
+<div class="sock-container">
+
+  <!-- jouw SVG hier plakken -->
+  <svg id="sockSVG" viewBox="0 0 200 400">
+
+    <defs>
+      <clipPath id="sockClip">
+        <path d="PASTE_HIER_JOUW_PATH"/>
+      </clipPath>
+    </defs>
+
+    <!-- dit blijft je outline -->
+    <path d="PASTE_HIER_JOUW_PATH" fill="white" stroke="#333" stroke-width="3"/>
+
+    <!-- HIER komt je patroon -->
+    <g id="patternGroup" clip-path="url(#sockClip)"></g>
+
+  </svg>
+
 </div>
 
-<div id="instructions" class="instructions"></div>
+<div id="patternText" class="pattern-box"></div>
 
-<script type="module">
-import { generateSock } from "./src/generator/generator.js";
-import { buildInstructions } from "./src/patterns/instructionBuilder.js";
+<script>
 
-const legContainer = document.getElementById("leg");
-const heelContainer = document.getElementById("heel");
-const footContainer = document.getElementById("foot");
-const instructionsBox = document.getElementById("instructions");
-
-function getInputs() {
-  return {
-    size: parseInt(document.getElementById("size").value),
-    themeName: document.getElementById("theme").value
-  };
-}
-
-window.renderSock = function () {
-
-  const config = getInputs();
-  const sock = generateSock(config);
-
-  console.log(sock);
-
-  legContainer.innerHTML = "";
-  footContainer.innerHTML = "";
-  heelContainer.innerHTML = "";
-
-  const fullWidth = sock.castOn || 60;
-  const width = Math.floor(fullWidth / 2);
-
-  const SCALE = 3;
-
-  /* =========================
-     CUFF
-  ========================= */
-  const cuff = document.createElement("div");
-  cuff.className = "band";
-  cuff.style.gridTemplateColumns = `repeat(${width}, 6px)`;
-
-  for (let r = 0; r < 6; r++) {
-    for (let i = 0; i < width; i++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      cell.style.background = i % 2 === 0 ? "#bbb" : "#eee";
-      cuff.appendChild(cell);
-    }
-  }
-
-  legContainer.appendChild(cuff);
-
-  /* =========================
-     LEG PATTERNS
-  ========================= */
-  const leg = sock.sections?.leg || sock.structure || [];
-
-  leg.forEach(pattern => {
-
-    const chart = pattern.chart || [];
-    if (!chart.length) return;
-
-    const band = document.createElement("div");
-    band.className = "band";
-
-    const repeat = pattern.repeat || chart[0].length;
-    const repeats = Math.floor(fullWidth / repeat);
-
-    band.style.gridTemplateColumns = `repeat(${width}, 6px)`;
-
-    const rows = Math.max(1, Math.floor((pattern.rounds || 6) / SCALE));
-
-    for (let r = 0; r < rows; r++) {
-      chart.forEach(row => {
-
-        let visual = "";
-
-        for (let i = 0; i < repeats; i++) {
-          visual += row;
-        }
-
-        visual = visual.slice(0, width);
-
-        visual.split("").forEach(c => {
-          const div = document.createElement("div");
-          div.className = "cell";
-
-          div.style.background =
-            c === "X"
-              ? pattern.colors?.[0] || "black"
-              : pattern.colors?.[1] || "white";
-
-          band.appendChild(div);
-        });
-
-      });
-    }
-
-    legContainer.appendChild(band);
-  });
-
-  /* =========================
-     HEEL (simple fill)
-  ========================= */
-  const heel = document.createElement("div");
-  heel.style.width = "100%";
-  heel.style.height = "100%";
-  heel.style.background = "#ddd";
-  heelContainer.appendChild(heel);
-
-  /* =========================
-     FOOT
-  ========================= */
-  const foot = document.createElement("div");
-  foot.style.height = "50px";
-  foot.style.background = "#eee";
-  footContainer.appendChild(foot);
-
-  /* =========================
-     TOE
-  ========================= */
-  const toe = document.createElement("div");
-  toe.className = "band";
-
-  const rows = 12;
-  let current = width;
-
-  for (let r = 0; r < rows; r++) {
-
-    if (r % 2 === 0 && current > 6) current -= 2;
-
-    const empty = Math.floor((width - current) / 2);
-    toe.style.gridTemplateColumns = `repeat(${width}, 6px)`;
-
-    for (let i = 0; i < width; i++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-
-      if (i < empty || i >= width - empty) {
-        cell.style.background = "transparent";
-      } else {
-        cell.style.background = "#ddd";
-      }
-
-      toe.appendChild(cell);
-    }
-  }
-
-  footContainer.appendChild(toe);
-
-  /* =========================
-     INSTRUCTIONS
-  ========================= */
-  instructionsBox.textContent = buildInstructions(sock);
+// DEMO (later vervangen door generator)
+const demoPattern = {
+  chart: [
+    "00110011",
+    "01100110",
+    "11000011",
+    "01100110"
+  ]
 };
 
-renderSock();
+const colors = {
+  main: "#f2c200",
+  contrast: "#000",
+  bg: "#ffffff"
+};
+
+function buildPattern(chart) {
+
+  const size = 6;
+  const width = chart[0].length * size;
+  const height = chart.length * size;
+
+  let rects = "";
+
+  chart.forEach((row, y) => {
+    row.split("").forEach((cell, x) => {
+
+      let color = cell === "1"
+        ? colors.main
+        : colors.bg;
+
+      rects += `
+        <rect 
+          x="${x * size}" 
+          y="${y * size}" 
+          width="${size}" 
+          height="${size}" 
+          fill="${color}" />
+      `;
+    });
+  });
+
+  return `
+    <pattern id="sockPattern"
+      patternUnits="userSpaceOnUse"
+      width="${width}"
+      height="${height}">
+      ${rects}
+    </pattern>
+  `;
+}
+
+function generate() {
+
+  const defs = document.getElementById("patternDefs");
+
+  // reset
+  defs.innerHTML = "";
+
+  // één patroon voor hele sok
+  defs.innerHTML = buildPattern(demoPattern.chart);
+
+  document.getElementById("patternText").innerText =
+`Cast on 72 stitches.
+Work in pattern.
+Heel and toe shaping included.`;
+}
+
+// initial render
+generate();
+
 </script>
 
 </body>
