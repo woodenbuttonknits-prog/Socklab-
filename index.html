@@ -65,7 +65,7 @@
     // kleuren
     const colors = {
       main: "#f2c200",
-      bg: "#ffffff",
+      bg: "#transparent",
       heel: "#d9b38c"
     };
 
@@ -118,6 +118,8 @@
 
     // --- DRAW ---
     function drawCell(x, y, color) {
+
+      if (color === "transparent") return;
 
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 
