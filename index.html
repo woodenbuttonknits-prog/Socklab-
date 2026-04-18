@@ -29,6 +29,7 @@
   <div class="controls">
     <button onclick="renderPattern()">Generate Sock</button>
   </div>
+  <div id="bandMapping" style="margin: 8px auto 0; width: 320px; text-align: left; font-size: 14px;"></div>
 
   <!-- 🔥 SVG -->
   <svg viewBox="-180 0 360 500" width="240" preserveAspectRatio="xMidYMid meet">
@@ -87,18 +88,36 @@
       "01010101"
     ];
 
-    // --- ZONES (AANGEPAST NAAR 300x500) ---
+    // --- BANDEN / ZONES ---
+    // Deze mapping maakt expliciet welke band bij welk sok-onderdeel hoort.
+    const bandToPart = {
+      band1: "leg",         // schacht (bovenkant)
+      band2: "transition",  // overgang richting enkel
+      band3: "heel",        // hielvlak
+      band4: "foot",        // voetdeel / wreef + zool
+      band5: "toe"          // teen
+    };
+
     function getZone(x, y) {
+      if (y < 120) return bandToPart.band1;
+      if (y < 200) return bandToPart.band2;
+      if (x < 120 && y > 180 && y < 320) return bandToPart.band3;
+      if (y >= 200 && y < 420) return bandToPart.band4;
+      return bandToPart.band5;
+    }
 
-      if (y < 120) return "leg";
+    function renderBandMapping() {
+      const legend = document.getElementById("bandMapping");
+      if (!legend) return;
 
-      if (y < 200) return "transition";
-
-      if (x < 120 && y > 180 && y < 320) return "heel";
-
-      if (y >= 200 && y < 420) return "foot";
-
-      return "toe";
+      legend.innerHTML = `
+        <strong>Band → onderdeel mapping</strong><br/>
+        Band 1: schacht (y &lt; 120)<br/>
+        Band 2: overgang / enkel (120 ≤ y &lt; 200)<br/>
+        Band 3: hiel (x &lt; 120 en 180 &lt; y &lt; 320)<br/>
+        Band 4: voet (200 ≤ y &lt; 420, exclusief hiel)<br/>
+        Band 5: teen (y ≥ 420)
+      `;
     }
 
     // --- ROTATIE ---
@@ -179,6 +198,7 @@
     }
 
     // init
+    renderBandMapping();
     renderPattern();
 
   </script>
