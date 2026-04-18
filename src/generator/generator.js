@@ -3,7 +3,7 @@ import themes from "../data/themes.json";
 import colors from "../data/colors.json";
 
 import { buildThemeStructure } from "../core/themeEngine.js";
-import { applyColors } from "../core/colorEngine.js";
+import { applyColors, applyChartColors } from "../core/colorEngine.js";
 import { applyHeights } from "../core/templateEngine.js";
 import { getFootCircumference } from "../core/sizeConverter.js";
 
@@ -35,6 +35,7 @@ export function generateSock(config = {}) {
 
   structure = applyColors(structure, themeColors);
   structure = applyHeights(structure);
+  structure = applyChartColors(structure);
 
   // -------------------------
   // REPEAT LOGIC (BELANGRIJK)

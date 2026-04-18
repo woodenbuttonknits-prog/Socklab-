@@ -43,6 +43,17 @@ export function buildInstructions(sock) {
       if (band.repeat) {
         lines.push(`Repeat every ${band.repeat} stitches.`);
       }
+
+      if (band.chart && band.chart.length) {
+        lines.push(`Chart preview:`);
+        band.chart.forEach(row => lines.push(`  ${row}`));
+      }
+
+      if (band.debugPalette) {
+        lines.push(
+          `Debug colors: X=${band.debugPalette.X || "(theme primary)"}, .=${band.debugPalette["."] || "(theme secondary)"}`
+        );
+      }
     });
   }
 
