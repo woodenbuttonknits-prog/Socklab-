@@ -74,12 +74,20 @@
     const WIDTH = 300;
     const HEIGHT = 500;
     const CELL = 5;
+    const DEBUG_ZONES = true;
 
     // kleuren
     const colors = {
       main: "#f2c200",
       bg: "transparent",
       heel: "#d9b38c"
+    };
+    const zoneColors = {
+      cuff: "#ff0000",
+      leg: "#00ff00",
+      heel: "#0000ff",
+      foot: "#ffff00",
+      toe: "#ff00ff"
     };
 
     // patroon
@@ -205,8 +213,15 @@
       rect.setAttribute("width", CELL);
       rect.setAttribute("height", CELL);
       rect.setAttribute("fill", color);
+      rect.setAttribute("fill-opacity", DEBUG_ZONES ? "0.8" : "1");
 
       svg.appendChild(rect);
+    }
+
+    function getPatternColor(x, y) {
+      const row = pattern[y % pattern.length];
+      const cell = row[x % row.length];
+      return cell === "1" ? colors.main : colors.bg;
     }
 
     // --- MAIN RENDER ---
@@ -216,6 +231,7 @@
 
       const cols = Math.ceil(WIDTH / CELL);
       const rows = Math.ceil(HEIGHT / CELL);
+      const zoneSet = new Set();
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
@@ -224,23 +240,28 @@
           const py = y * CELL;
 
           const zone = getZone(px, py, WIDTH, HEIGHT);
+          zoneSet.add(zone);
           const rotation = getRotation(zone);
 
           const p = transformPoint(px, py, rotation);
 
-          let color;
+          let fillColor;
 
-          if (zone === "heel") {
-            color = colors.heel;
+          if (DEBUG_ZONES) {
+            fillColor = zoneColors[zone] || "#000000";
           } else {
-            const row = pattern[y % pattern.length];
-            const cell = row[x % row.length];
-            color = cell === "1" ? colors.main : colors.bg;
+            if (zone === "heel") {
+              fillColor = colors.heel;
+            } else {
+              fillColor = getPatternColor(x, y);
+            }
           }
 
-          drawCell(p.x, p.y, color);
+          drawCell(p.x, p.y, fillColor);
         }
       }
+
+      console.log("Zones detected:", Array.from(zoneSet));
     }
 
     // init
