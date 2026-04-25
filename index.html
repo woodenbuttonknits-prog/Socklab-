@@ -101,7 +101,7 @@
     const sockModel = {
       cuff: 0.08,
       leg: 0.37,
-      heel: 0.15,
+      heel: 0.20,
       foot: 0.30,
       toe: 0.10
     };
@@ -110,7 +110,7 @@
       const cuffEnd = sockModel.cuff * height;
       const legEnd = cuffEnd + sockModel.leg * height;
       const heelStart = legEnd;
-      const heelEnd = heelStart + sockModel.heel * height;
+      const heelEnd = heelStart + (height * 0.20);
       const toeStart = height - (sockModel.toe * height);
 
       return {
@@ -123,22 +123,28 @@
     }
 
     function isToe(x, y, width, height) {
-      const centerX = width * 0.22;
-      const centerY = height * 0.88;
-      const radiusX = width * 0.38;
-      const radiusY = height * 0.12;
+      const centerX = width * 0.25;
+      const centerY = height * 0.85;
+      const radiusX = width * 0.42;
+      const radiusY = height * 0.16;
       const dx = (x - centerX) / radiusX;
       const dy = (y - centerY) / radiusY;
 
       return (dx * dx + dy * dy) < 1;
     }
 
+    function heelCurve(y, width, height) {
+      const { heelStart, heelEnd } = createSockGeometry(width, height);
+      const t = (y - heelStart) / (heelEnd - heelStart);
+
+      // stronger outward push
+      return width * (0.45 + 0.35 * t);
+    }
+
     function isHeel(x, y, width, height) {
       const { heelStart, heelEnd } = createSockGeometry(width, height);
       if (y < heelStart || y > heelEnd) return false;
-      const t = (y - heelStart) / (heelEnd - heelStart);
-      const curveX = width * (0.55 + 0.25 * t);
-      return x > curveX;
+      return x > heelCurve(y, width, height);
     }
 
     function getZone(x, y, width, height) {
