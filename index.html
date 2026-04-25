@@ -100,8 +100,8 @@
     // --- DYNAMISCHE ZONES (ANATOMY-BASED) ---
     const sockModel = {
       cuff: 0.08,
-      leg: 0.37,
-      heel: 0.20,
+      leg: 0.35,
+      heel: 0.18,
       foot: 0.30,
       toe: 0.10
     };
@@ -110,7 +110,7 @@
       const cuffEnd = sockModel.cuff * height;
       const legEnd = cuffEnd + sockModel.leg * height;
       const heelStart = legEnd;
-      const heelEnd = heelStart + (height * 0.20);
+      const heelEnd = heelStart + (height * 0.18);
       const toeStart = height - (sockModel.toe * height);
 
       return {
@@ -124,13 +124,27 @@
 
     function isToe(x, y, width, height) {
       const centerX = width * 0.25;
-      const centerY = height * 0.85;
-      const radiusX = width * 0.42;
+      const centerY = height * 0.91;
+      const radiusX = width * 0.30;
       const radiusY = height * 0.16;
       const dx = (x - centerX) / radiusX;
       const dy = (y - centerY) / radiusY;
+      const insideToeCap = (dx * dx + dy * dy) < 1;
 
-      return (dx * dx + dy * dy) < 1;
+      // rechte overgangslijn (parallel aan hielscheiding) voor stabiele teen-overgang
+      const t = Math.max(0, Math.min(1, (y - height * 0.78) / (height * 0.22)));
+      const toeSplitX = width * (0.46 - 0.16 * t);
+      const insideToeSplit = y > height * 0.78 && x < toeSplitX;
+
+      return insideToeCap || insideToeSplit;
+    }
+
+    function heelCurve(y, width, height) {
+      const { heelStart, heelEnd } = createSockGeometry(width, height);
+      const t = (y - heelStart) / (heelEnd - heelStart);
+
+      // stronger outward push
+      return width * (0.45 + 0.35 * t);
     }
 
     function heelCurve(y, width, height) {
