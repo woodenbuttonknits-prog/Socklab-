@@ -74,7 +74,6 @@
     const WIDTH = 300;
     const HEIGHT = 500;
     const CELL = 5;
-    const DEBUG_ZONES = true;
 
     // kleuren
     const colors = {
@@ -82,13 +81,14 @@
       bg: "transparent",
       heel: "#d9b38c"
     };
+    const DEBUG_ZONES = false;
 
     const zoneColors = {
-      cuff: "#ff0000",
-      leg: "#00ff00",
-      heel: "#0000ff",
-      foot: "#ffff00",
-      toe: "#ff00ff"
+      cuff: colors.main,
+      leg: colors.main,
+      heel: colors.heel,
+      foot: colors.main,
+      toe: colors.main
     };
 
     // patroon
@@ -118,33 +118,27 @@
         legEnd,
         heelStart,
         heelEnd,
-        toeStart,
-        toeCenter: {
-          x: (-width / 2) + width * 0.25,
-          y: height * 0.92
-        },
-        toeRadius: width * 0.35
+        toeStart
       };
     }
 
     function isToe(x, y, width, height) {
-      const { toeCenter, toeRadius } = createSockGeometry(width, height);
-      const dx = x - toeCenter.x;
-      const dy = y - toeCenter.y;
-      return Math.sqrt(dx * dx + dy * dy) < toeRadius;
-    }
+      const centerX = width * 0.22;
+      const centerY = height * 0.88;
+      const radiusX = width * 0.38;
+      const radiusY = height * 0.12;
+      const dx = (x - centerX) / radiusX;
+      const dy = (y - centerY) / radiusY;
 
-    function heelCurve(y, height, width) {
-      const { heelStart, heelEnd } = createSockGeometry(width, height);
-      const t = (y - heelStart) / (heelEnd - heelStart);
-      return (-width / 2) + width * (0.5 + 0.2 * t);
+      return (dx * dx + dy * dy) < 1;
     }
 
     function isHeel(x, y, width, height) {
       const { heelStart, heelEnd } = createSockGeometry(width, height);
-      return y > heelStart &&
-        y < heelEnd &&
-        x > heelCurve(y, height, width);
+      if (y < heelStart || y > heelEnd) return false;
+      const t = (y - heelStart) / (heelEnd - heelStart);
+      const curveX = width * (0.55 + 0.25 * t);
+      return x > curveX;
     }
 
     function getZone(x, y, width, height) {
@@ -238,12 +232,18 @@
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
 
-          const px = x * CELL - WIDTH / 2;
+          const zoneX = x * CELL;
+          const px = zoneX - WIDTH / 2;
           const py = y * CELL;
-
-          const zone = getZone(px, py, WIDTH, HEIGHT);
-          zoneSet.add(zone);
+          const zone = getZone(zoneX, py, WIDTH, HEIGHT) || "foot";
+        
           const rotation = getRotation(zone);
+
+          if (DEBUG_ZONES) {
+            if (!zoneColors[zone]) {
+              console.warn("Unknown zone detected", zone);
+            }
+          }
 
           const p = transformPoint(px, py, rotation);
 
