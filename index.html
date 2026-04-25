@@ -99,11 +99,20 @@
     };
 
     function getZone(x, y) {
-      if (y < 120) return bandToPart.band1;
-      if (y < 200) return bandToPart.band2;
-      if (x < 120 && y > 180 && y < 320) return bandToPart.band3;
-      if (y >= 200 && y < 420) return bandToPart.band4;
-      return bandToPart.band5;
+      // Band 1: boord / bovenrand
+      if (y < 95) return bandToPart.band1;
+
+      // Band 2: schacht
+      if (y < 255) return bandToPart.band2;
+
+      // Band 3: hiel (achterkant, rechterzijde in dit profiel)
+      if (x > 20 && y >= 280 && y < 410) return bandToPart.band3;
+
+      // Band 5: teen (linksonder + punt)
+      if (y >= 430 || (x < -70 && y >= 355)) return bandToPart.band5;
+
+      // Band 4: voet / wreef + zool (zonder hiel en teen)
+      return bandToPart.band4;
     }
 
     function renderBandMapping() {
@@ -112,11 +121,11 @@
 
       legend.innerHTML = `
         <strong>Band → onderdeel mapping</strong><br/>
-        Band 1: schacht (y &lt; 120)<br/>
-        Band 2: overgang / enkel (120 ≤ y &lt; 200)<br/>
-        Band 3: hiel (x &lt; 120 en 180 &lt; y &lt; 320)<br/>
-        Band 4: voet (200 ≤ y &lt; 420, exclusief hiel)<br/>
-        Band 5: teen (y ≥ 420)
+        Band 1: boord / bovenrand (y &lt; 95)<br/>
+        Band 2: schacht (95 ≤ y &lt; 255)<br/>
+        Band 3: hiel (x &gt; 20 en 280 ≤ y &lt; 410)<br/>
+        Band 4: voet (restgebied, exclusief hiel/teen)<br/>
+        Band 5: teen (y ≥ 430 of x &lt; -70 en y ≥ 355)
       `;
     }
 
