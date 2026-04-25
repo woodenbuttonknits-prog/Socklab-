@@ -87,45 +87,91 @@
       "10101010",
       "01010101"
     ];
-
-    // --- BANDEN / ZONES ---
-    // Deze mapping maakt expliciet welke band bij welk sok-onderdeel hoort.
-    const bandToPart = {
-      band1: "leg",         // schacht (bovenkant)
-      band2: "transition",  // overgang richting enkel
-      band3: "heel",        // hielvlak
-      band4: "foot",        // voetdeel / wreef + zool
-      band5: "toe"          // teen
+    
+    // --- DYNAMISCHE ZONES (ANATOMY-BASED) ---
+    const sockModel = {
+      cuff: 0.08,
+      leg: 0.37,
+      heel: 0.15,
+      foot: 0.30,
+      toe: 0.10
     };
 
-    function getZone(x, y) {
-      if (y < 120) return bandToPart.band1;
-      if (y < 200) return bandToPart.band2;
-      if (x < 120 && y > 180 && y < 320) return bandToPart.band3;
-      if (y >= 200 && y < 420) return bandToPart.band4;
-      return bandToPart.band5;
+    function createSockGeometry(width, height) {
+      const cuffEnd = sockModel.cuff * height;
+      const legEnd = cuffEnd + sockModel.leg * height;
+      const heelStart = legEnd;
+      const heelEnd = heelStart + sockModel.heel * height;
+      const toeStart = height - (sockModel.toe * height);
+
+      return {
+        cuffEnd,
+        legEnd,
+        heelStart,
+        heelEnd,
+        toeStart,
+        toeCenter: {
+          x: (-width / 2) + width * 0.25,
+          y: height * 0.92
+        },
+        toeRadius: width * 0.35
+      };
+    }
+
+    function isToe(x, y, width, height) {
+      const { toeCenter, toeRadius } = createSockGeometry(width, height);
+      const dx = x - toeCenter.x;
+      const dy = y - toeCenter.y;
+      return Math.sqrt(dx * dx + dy * dy) < toeRadius;
+    }
+
+    function heelCurve(y, height, width) {
+      const { heelStart, heelEnd } = createSockGeometry(width, height);
+      const t = (y - heelStart) / (heelEnd - heelStart);
+      return (-width / 2) + width * (0.5 + 0.2 * t);
+    }
+
+    function isHeel(x, y, width, height) {
+      const { heelStart, heelEnd } = createSockGeometry(width, height);
+      return y > heelStart &&
+        y < heelEnd &&
+        x > heelCurve(y, height, width);
+    }
+
+    function getZone(x, y, width, height) {
+      const { cuffEnd, legEnd } = createSockGeometry(width, height);
+
+      if (isToe(x, y, width, height)) return "toe";
+      if (isHeel(x, y, width, height)) return "heel";
+      if (y < cuffEnd) return "cuff";
+      if (y < legEnd) return "leg";
+      return "foot";
     }
 
     function renderBandMapping() {
       const legend = document.getElementById("bandMapping");
       if (!legend) return;
+      const { cuffEnd, legEnd, heelStart, heelEnd, toeStart } = createSockGeometry(WIDTH, HEIGHT);
+
 
       legend.innerHTML = `
-        <strong>Band → onderdeel mapping</strong><br/>
-        Band 1: schacht (y &lt; 120)<br/>
-        Band 2: overgang / enkel (120 ≤ y &lt; 200)<br/>
-        Band 3: hiel (x &lt; 120 en 180 &lt; y &lt; 320)<br/>
-        Band 4: voet (200 ≤ y &lt; 420, exclusief hiel)<br/>
-        Band 5: teen (y ≥ 420)
+        <strong>Zone mapping (dynamic anatomy model)</strong><br/>
+        Cuff: y &lt; ${Math.round(cuffEnd)}<br/>
+        Leg: ${Math.round(cuffEnd)} ≤ y &lt; ${Math.round(legEnd)}<br/>
+        Heel: curved area, ${Math.round(heelStart)} &lt; y &lt; ${Math.round(heelEnd)}<br/>
+        Foot: default zone between leg and toe<br/>
+        Toe: radial zone vanaf y ≈ ${Math.round(toeStart)}
       `;
     }
 
     // --- ROTATIE ---
     function getRotation(zone) {
       switch (zone) {
-        case "foot": return 25;
-        case "transition": return 12;
-        default: return 0;
+        case "foot":
+        case "toe":
+          return 25;
+        default:
+          return 0;
       }
     }
 
@@ -177,7 +223,7 @@
           const px = x * CELL - WIDTH / 2;
           const py = y * CELL;
 
-          const zone = getZone(px, py);
+          const zone = getZone(px, py, WIDTH, HEIGHT);
           const rotation = getRotation(zone);
 
           const p = transformPoint(px, py, rotation);
