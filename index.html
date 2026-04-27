@@ -129,7 +129,7 @@
       const radiusY = height * 0.16;
       const dx = (x - centerX) / radiusX;
       const dy = (y - centerY) / radiusY;
-      const insideToeCap = (dx * dx + dy * dy) < 1;
+      const insideToeCap = (dx * dx + dy * dy) < 1.05;
 
       // rechte overgangslijn (parallel aan hielscheiding) voor stabiele teen-overgang
       const t = Math.max(0, Math.min(1, (y - height * 0.78) / (height * 0.22)));
@@ -139,26 +139,13 @@
       return insideToeCap || insideToeSplit;
     }
 
-    function heelCurve(y, width, height) {
-      const { heelStart, heelEnd } = createSockGeometry(width, height);
-      const t = (y - heelStart) / (heelEnd - heelStart);
-
-      // stronger outward push
-      return width * (0.45 + 0.35 * t);
-    }
-
-    function heelCurve(y, width, height) {
-      const { heelStart, heelEnd } = createSockGeometry(width, height);
-      const t = (y - heelStart) / (heelEnd - heelStart);
-
-      // stronger outward push
-      return width * (0.45 + 0.35 * t);
-    }
-
     function isHeel(x, y, width, height) {
       const { heelStart, heelEnd } = createSockGeometry(width, height);
       if (y < heelStart || y > heelEnd) return false;
-      return x > heelCurve(y, width, height);
+      const t = (y - heelStart) / (heelEnd - heelStart);
+      const eased = t * t * (3 - 2 * t);
+      const curveX = width * (0.40 + 0.35 * eased);      
+      return x > curveX * 0.90;
     }
 
     function getZone(x, y, width, height) {
@@ -170,6 +157,8 @@
       if (y < legEnd) return "leg";
       return "foot";
     }
+
+    // everything below leg that is not toe/heel is foot
 
     function renderBandMapping() {
       const legend = document.getElementById("bandMapping");
